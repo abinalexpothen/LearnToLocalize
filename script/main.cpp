@@ -3,31 +3,21 @@
 #include <iostream>
 #include <tuple>
 
-double calc_gaussian_probability(double x, double mu, double sigma2) {
-  return exp(-pow((x - mu), 2) / (2 * sigma2)) / sqrt(2 * M_PI * sigma2);
+double calc_gaussian_probability(double x, double mean, double variance) {
+  return exp(-pow((x - mean), 2) / (2 * variance)) / sqrt(2 * M_PI * variance);
 }
 
-/*
- mu - mean of prior belief
- sigma2 - variance of prior belief
-
- v - mean of measurement
- r2 - variance of measurement
-
- tau - mean of posterior
- s2 - variance of measurement
-
-*/
-std::tuple<double, double> measurement_update(double mu, double sigma2,
-                                              double v, double r2) {
-  double tau = (r2 * mu + sigma2 * v) / (r2 + sigma2);
-  double s2 = 1.0 / (1.0 / r2 + 1.0 / sigma2);
-  return std::make_tuple(tau, s2);
+std::tuple<double, double> measurement_update(double mean1, double variance1,
+                                              double mean2, double variance2) {
+  double new_mean =
+      (variance2 * mean1 + mean2 * variance1) / (variance1 + variance2);
+  double new_variance = 1.0 / (1.0 / variance1 + 1.0 / variance2);
+  return std::make_tuple(new_mean, new_variance);
 }
 
 int main() {
-  double tau, s2;
-  std::tie(tau, s2) = measurement_update(30.0, 6.0, 5.0, 1.0);
-  printf("tau: %f, s^2: %f", tau, s2);
+  double new_mean, new_variance;
+  std::tie(new_mean, new_variance) = measurement_update(20.0, 5.0, 30.0, 5.0);
+  printf("new_mean: %f, new_variance: %f", new_mean, new_variance);
   return 0;
 }
