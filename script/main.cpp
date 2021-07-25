@@ -23,13 +23,24 @@ std::tuple<double, double> state_prediction(double mean1, double variance1,
 }
 
 int main() {
-  double new_mean, new_variance;
-  std::tie(new_mean, new_variance) = measurement_update(20.0, 5.0, 30.0, 5.0);
-  printf("\n Measurement update: new_mean: %f, new_variance: %f", new_mean,
-         new_variance);
-  std::tie(new_mean, new_variance) = state_prediction(10.0, 4.0, 12.0, 4.0);
-  printf("\n State update: new_mean: %f, new_variance: %f", new_mean,
-         new_variance);
+  double measurements[5] = {5, 6, 7, 9, 10};
+  double measurement_sig = 4;
+
+  double motion[5] = {1, 1, 2, 1, 1};
+  double motion_sig = 2;
+
+  double mu = -100000;
+  double var = 1000000;
+
+  // 1D Kalman filter
+  for (std::size_t i = 0; i < sizeof(measurements) / sizeof(measurements[0]);
+       i++) {
+    std::tie(mu, var) =
+        measurement_update(mu, var, measurements[i], measurement_sig);
+    printf("Measurement update mean: %f, variance: %f\n", mu, var);
+    std::tie(mu, var) = state_prediction(mu, var, motion[i], motion_sig);
+    printf("State prediction mean: %f, variance: %f\n", mu, var);
+  }
 
   return 0;
 }
