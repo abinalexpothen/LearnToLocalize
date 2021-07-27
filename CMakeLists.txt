@@ -1,4 +1,7 @@
 project(LearnToLocalize)
 cmake_minimum_required(VERSION 3.16)
-add_executable(learntolocalize script/main.cpp)
-target_link_libraries(learntolocalize)
+
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+
+add_executable(learntolocalize script/kalmanfiltermultiD.cpp)
+target_link_libraries(learntolocalize Eigen3::Eigen)

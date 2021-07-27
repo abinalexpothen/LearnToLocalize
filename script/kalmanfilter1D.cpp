@@ -29,8 +29,8 @@ int main() {
   double motion[5] = {1, 1, 2, 1, 1};
   double motion_sig = 2;
 
-  double mu = -100000;
-  double var = 1000000;
+  double mu = 0;
+  double var = 1000;
 
   // 1D Kalman filter
   for (std::size_t i = 0; i < sizeof(measurements) / sizeof(measurements[0]);
