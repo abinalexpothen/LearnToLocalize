@@ -1,3 +1,5 @@
-# LearnToLocalize
+# mobile-robot-localization
 
-This is a short project aimed at learning techniques to localize.
+This repository was created while learning mobile robot localization. The code implements the following:
+- Kalman filter
+- Monte-Carlo localization
