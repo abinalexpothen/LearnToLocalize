@@ -1,0 +1,200 @@
+#include <iostream>
+#include <math.h>
+#include <vector>
+#include <string>
+#include <random> //c++11 random numbers
+
+// landmarks
+double landmarks[8][2] = {{20.0, 20.0}, {20.0, 80.0}, {20.0, 50.0}, {50.0, 20.0}, {50.0, 80.0}, {80.0, 80.0}, {80.0, 20.0}, {80.0, 50.0}};
+
+// map size
+double world_size = 100.0;
+
+// random number generator
+std::random_device rd;
+std::mt19937 gen(rd());
+
+// global functions
+double mod(double first_term, double second_term);
+double gen_real_random();
+
+class Robot{
+    public:
+    Robot()
+    {
+        //constructor
+        x = gen_real_random() * world_size; // x-coordinate
+        y = gen_real_random() * world_size; // y-coordinate
+        orient = gen_real_random() * 2.0 * M_PI; // orientation
+
+        forward_noise = 0.0; // formard motion noise
+        turn_noise = 0.0; // turn noise
+        sense_noise = 0.0; // sensing noise
+    }
+
+    void set(double new_x, double new_y, double new_orient)
+    {
+        if (new_x < 0 || new_x >= world_size)
+        throw std::invalid_argument("X-coord out of bounds");
+
+        if (new_y < 0 || new_y >= world_size)
+        throw std::invalid_argument("Y-coord out of bounds");
+
+        if (new_orient < 0 || new_orient >= 2*M_PI)
+        throw std::invalid_argument("Orientation out of bounds");
+
+        x = new_x;
+        y = new_y;
+        orient = new_orient;
+    }
+
+    void set_noise(double new_forward_noise, double new_turn_noise, double new_sense_noise)
+    {
+        // simulate noise, often found in particle filters
+        forward_noise = new_forward_noise;
+        turn_noise = new_turn_noise;
+        sense_noise = new_sense_noise;
+    }
+
+    std::vector<double> sense()
+    {
+        //measure distances from robot towards landmark
+        std::vector<double> z(sizeof(landmarks)/sizeof(landmarks[0]));
+        double dist;
+
+        for (int i = 0; i < sizeof(landmarks)/sizeof(landmarks[0]); i++)
+        {
+            dist = sqrt(pow((x-landmarks[i][0]),2)+pow((y-landmarks[i][1]),2));
+            dist += gen_gauss_random(0.0, sense_noise);
+            z[i] = dist;
+        }
+
+        return z;
+    }
+
+    Robot move(double turn, double forward)
+    {
+        if (forward < 0)
+        throw std::invalid_argument("Robot cannot move backward");
+
+        // turn and add randomness to turn command
+        orient = orient + turn + gen_gauss_random(0.0, turn_noise);
+        orient = mod(orient, 2*M_PI);
+
+        //move and add randomness to motion command
+        double dist = forward + gen_gauss_random(0.0, forward_noise);
+        x = x + cos(orient)*dist;
+        y = y + sin(orient)*dist;
+
+        // cyclic truncate
+        x = mod(x, world_size);
+        y = mod(y, world_size);
+
+        // set particle
+        Robot res;
+        res.set(x, y, orient);
+        res.set_noise(forward_noise, turn_noise, sense_noise);
+
+        return res;
+    }
+
+    // returns robot current position and orientation as a string
+    std::string show_pose()
+    {
+        return "[x=" + std::to_string(x) + " y=" + std::to_string(y) + " orient=" + std::to_string(orient) + "]";
+    }
+
+    // returns all distances from the robot towards landmark
+    std::string read_sensors()
+    {
+        std::vector<double> z  = sense();
+        std::string readings = "[";
+        for (int i = 0; i < z.size(); i++)
+        {
+            readings += std::to_string(z[i]) + " ";
+        }
+        readings[readings.size()-1] = ']';
+
+        return readings;
+    }
+
+    // calculates how likely a measurement should be
+    double measurement_probability(std::vector<double> measurement)
+    {
+        double prob = 1.0;
+        double dist;
+
+        for (int i = 0; i < sizeof(landmarks)/sizeof(landmarks[0]); i++)
+        {
+            dist = sqrt(pow((x-landmarks[i][0]),2)+pow((y-landmarks[i][1]),2));
+            prob *= gaussian(dist, sense_noise, measurement[i]);
+
+            return prob;
+        }
+
+    }
+
+    double x, y, orient; // robot poses
+    double forward_noise, turn_noise, sense_noise; // robot noises
+
+    private:
+    double gen_gauss_random(double mean, double variance)
+    {
+        // Gaussian random
+        std::normal_distribution<double> gauss_dist(mean, variance);
+        return gauss_dist(gen);
+    }
+
+    // probability of x for 1-D gaussian with mean mu and variance sigma
+    double gaussian(double mu, double sigma, double x)
+    {
+        return exp(-(pow((mu-x),2))/pow(sigma,2)/2.0)/sqrt(2.0*M_PI*(pow(sigma,2)));
+    }
+};
+
+//functions
+
+// generate real numbers between 0 and 1
+double gen_real_random()
+{
+    std::uniform_real_distribution<double> real_dist(0.0, 1.0); //real
+    return real_dist(gen);
+}
+
+// compute modulus
+double mod(double first_term, double second_term)
+{
+    return first_term - second_term * floor(first_term/second_term);
+
+}
+
+// compute mean error of the system
+double evaluation(Robot r, Robot p[], int n)
+{
+    double sum = 0.0;
+    for (int i = 0; i < n;  i++)
+    {
+        double dx = mod((p[i].x -r.x + world_size/2.0), world_size) - world_size/2.0;
+        double dy = mod((p[i].y-r.y+world_size/2.0), world_size) - world_size/2.0;
+        double err = sqrt(pow(dx,2)+pow(dy,2));
+        sum += err;
+    }
+    return sum/n;
+}
+
+// identify max elements in an array
+double max(double arr[], int n)
+{
+    double max = 0;
+    for (int i = 0; i < n; i++)
+    {
+        if (arr[i] > max)
+        max = arr[i];
+    }
+    return max;
+}
+
+int main()
+{
+    return 0;
+}
