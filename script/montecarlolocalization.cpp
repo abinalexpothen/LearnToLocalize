@@ -196,5 +196,25 @@ double max(double arr[], int n)
 
 int main()
 {
+    // Test interfacing with robot class
+    Robot myrobot;
+    myrobot.set_noise(5.0, 0.1, 5.0);
+    myrobot.set(30.0, 50.0, M_PI/2.0);
+    myrobot.move(-M_PI/2.0, 15.0);
+    // std::cout << myrobot.read_sensors() << std::endl;
+    myrobot.move(-M_PI/2.0, 10.0);
+    // std::cout << myrobot.read_sensors() << std::endl;    
+    
+    // Instantiate 100 particles, each with a random positon and orientation
+    int n = 1000;
+    Robot p[n];
+
+    // iterate over each particle
+    for (int i = 0; i < n;i++)
+    {
+        p[i].set_noise(0.05, 0.05, 5.0);
+        p[i] = p[i].move(0.1, 5.0);
+        std::cout << p[i].show_pose() << std::endl;
+    }
     return 0;
 }
