@@ -209,12 +209,57 @@ int main()
     int n = 1000;
     Robot p[n];
 
+    myrobot = Robot();
+    std::vector<double> z;
+
+    //Move the robot and sense the environment afterwards
+    myrobot = myrobot.move(0.1, 5.0);
+    z = myrobot.sense();
+
     // iterate over each particle
     for (int i = 0; i < n;i++)
     {
         p[i].set_noise(0.05, 0.05, 5.0);
         p[i] = p[i].move(0.1, 5.0);
-        std::cout << p[i].show_pose() << std::endl;
+        // std::cout << p[i].show_pose() << std::endl;
     }
+
+    // weights
+    double w[n];
+
+    for (int i=0; i < n; i++)
+    {
+        w[i] = p[i].measurement_probability(z);
+        //std::cout << w[i] << std::endl;
+    }
+
+    // resample wheel
+    Robot p3[n];
+    
+    int index = gen_real_random() * n;
+    
+    double beta = 0;
+    double wmax = max(w,n);
+    
+    for (int i = 0;i < n; i++)
+    {
+        beta = beta + gen_real_random()*2*wmax;
+        while (w[index] < beta)
+        {
+            beta -= w[index];
+            index = mod((index + 1), n);
+        }
+        p3[i] = p[index];
+    }
+    
+    for (int k = 0; k < n;k++)
+    {
+        p[k] = p3[k];
+        std::cout << p[k].show_pose() << std::endl;
+    }
+    
+
+
+
     return 0;
 }
