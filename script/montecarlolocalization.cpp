@@ -3,6 +3,9 @@
 #include <vector>
 #include <string>
 #include <random> //c++11 random numbers
+#include "matplotlibcpp.h"
+
+namespace plt = matplotlibcpp;
 
 // landmarks
 double landmarks[8][2] = {{20.0, 20.0}, {20.0, 80.0}, {20.0, 50.0}, {50.0, 20.0}, {50.0, 80.0}, {80.0, 80.0}, {80.0, 20.0}, {80.0, 50.0}};
@@ -194,6 +197,48 @@ double max(double arr[], int n)
     return max;
 }
 
+void visualization(int n, Robot robot, int step, Robot p[], Robot pr[])
+{
+    //Draw the robot, landmarks, particles and resampled particles on a graph
+
+    //Graph Format
+    plt::title("MCL, step " + std::to_string(step));
+    plt::xlim(0, 100);
+    plt::ylim(0, 100);
+
+    //Draw particles in green
+    for (int i = 0; i < n; i++) {
+        std::vector<double> x = {p[i].x};
+        std::vector<double> y = {p[i].y};
+        plt::plot(x, y, "go");
+    }
+
+    //Draw resampled particles in yellow
+    for (int i = 0; i < n; i++) {
+        std::vector<double> x = {pr[i].x};
+        std::vector<double> y = {pr[i].y};
+        plt::plot(x, y, "yo");
+    }
+
+    //Draw landmarks in red
+    for (int i = 0; i < sizeof(landmarks) / sizeof(landmarks[0]); i++) {
+        std::vector<double> x = {landmarks[i][0]};
+        std::vector<double> y = {landmarks[i][1]};
+        plt::plot(x, y, "ro");
+    }
+
+    //Draw robot position in blue
+    std::vector<double> x = {robot.x};
+    std::vector<double> y = {robot.y};
+    plt::plot(x, y, "bo");
+    plt::show();
+
+    //Save the image and close the plot
+    //plt::savefig("./Images/Step" + std::to_string(step) + ".png");
+    //plt::clf();
+}
+
+
 int main()
 {
     // Test interfacing with robot class
@@ -212,50 +257,60 @@ int main()
     myrobot = Robot();
     std::vector<double> z;
 
-    //Move the robot and sense the environment afterwards
-    myrobot = myrobot.move(0.1, 5.0);
-    z = myrobot.sense();
+    int steps = 50;
+    for (int t = 0; t < steps; t++) {
 
-    // iterate over each particle
-    for (int i = 0; i < n;i++)
-    {
-        p[i].set_noise(0.05, 0.05, 5.0);
-        p[i] = p[i].move(0.1, 5.0);
-        // std::cout << p[i].show_pose() << std::endl;
-    }
+        //Move the robot and sense the environment afterwards
+        myrobot = myrobot.move(0.1, 5.0);
+        z = myrobot.sense();
 
-    // weights
-    double w[n];
+        Robot p2[n];
 
-    for (int i=0; i < n; i++)
-    {
-        w[i] = p[i].measurement_probability(z);
-        //std::cout << w[i] << std::endl;
-    }
-
-    // resample wheel
-    Robot p3[n];
-    
-    int index = gen_real_random() * n;
-    
-    double beta = 0;
-    double wmax = max(w,n);
-    
-    for (int i = 0;i < n; i++)
-    {
-        beta = beta + gen_real_random()*2*wmax;
-        while (w[index] < beta)
+        // iterate over each particle
+        for (int i = 0; i < n;i++)
         {
-            beta -= w[index];
-            index = mod((index + 1), n);
+            p2[i].set_noise(0.05, 0.05, 5.0);
+            p[i] = p2[i].move(0.1, 5.0);
+            // std::cout << p[i].show_pose() << std::endl;
         }
-        p3[i] = p[index];
-    }
-    
-    for (int k = 0; k < n;k++)
-    {
-        p[k] = p3[k];
-        std::cout << p[k].show_pose() << std::endl;
+
+        // weights
+        double w[n];
+
+        for (int i=0; i < n; i++)
+        {
+            w[i] = p[i].measurement_probability(z);
+            //std::cout << w[i] << std::endl;
+        }
+
+        // resample wheel
+        Robot p3[n];
+
+        int index = gen_real_random() * n;
+
+        double beta = 0;
+        double wmax = max(w,n);
+
+        for (int i = 0;i < n; i++)
+        {
+            beta = beta + gen_real_random()*2*wmax;
+            while (w[index] < beta)
+            {
+                beta -= w[index];
+                index = mod((index + 1), n);
+            }
+            p3[i] = p[index];
+        }
+
+        for (int k = 0; k < n;k++)
+        {
+            p[k] = p3[k];
+            //std::cout << p[k].show_pose() << std::endl;
+        }
+
+        std::cout << "Step = " << t << ", Evaluation = " << evaluation(myrobot, p, n) << std::endl;
+
+        visualization(n, myrobot, t, p2, p3);
     }
     
 
